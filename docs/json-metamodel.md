@@ -1,25 +1,29 @@
+# JSON Meta Model
+
+A [JSON](http://json.org/) notation for describing complex (xml-like) meta models.
+
+
+## Overview
+
+Use the notation to describe elements, including their properties, associations and type information.
+
 ```
 {
-  "name": "FlowNode",
-  "superClass": "FlowElement AnotherSuperClass",
+  "name": "SomeElement",
+  "superClass": "SomeParent SomeOtherParent",
   "properties": [
     {
-      "name": "outgoing",
-      "type": "SequenceFlow",
-      "isMany": true
+      "name": "@someAttribute",
+      "type": "String"
     },
     {
-      "name": "incoming",
-      "type": "SequenceFlow",
-      "association": "A_targetRef_incoming_flow",
-      "id": "FlowNode-incoming",
-      "isMany": true
+      "name": "subType",
+      "type": "ContainedChild"
     },
     {
-      "name": "lanes",
-      "type": "Lane",
-      "association": "A_flowNodeRefs_lanes",
-      "id": "FlowNode-lanes",
+      "name": "referencedType",
+      "type": "SomeReferencedElement",
+      "association": "ReferencedElement-type-to-referencedType",
       "isVirtual": true,
       "isMany": true
     }
@@ -27,60 +31,37 @@
 }
 ```
 
+Combine all known types into a package that has a well defined namespace.
+
+```
+{
+  "name": "MYNS",
+  "uri": "http://my.ns",
+  "associations": [], 
+  "types": [],
+  "enumerations": []
+}
+```
+
+## Types
+
+A type is a well defined element with a certain structure.
+
+It consists of a `name` a list of `superClass`es and a number of `properties`.
+
+
+
 ## Properties
 
-### isMany
+Specify properties of an element within the `properties = []` tag.
 
-```
-{
-  "name": "outgoing",
-  "type": "SequenceFlow",
-  "isMany": true
-}
-```
+A number of markers may help to further specify each property.
 
-```
-<foo>
-<outgoing>outGoing1</outgoing>
-<outgoing>outGoing2</outgoing>
-</foo>
-```
-
-### !isMany
-
-```
-{
-  "name": "outgoing",
-  "association": ...
-  "type": "SequenceFlow"
-}
-```
-
-```
-<foo>
-<outgoing>outGoing1</outgoing>
-</foo>
-```
-
-### isRequired
-
-```
-{
-  "name": "outgoing",
-  "type": "SequenceFlow",
-  "isRequired": true
-}
-```
-
-Implication: cardinality >= 1
-
-```
-<foo>
-<outgoing>outGoing1</outgoing>
-</foo>
-```
 
 ### @attribute
+
+All properties with a name starting with `@` are attributes.
+Other properties are nested, i.e. nested or referenced entities.
 
 ```
 {
@@ -90,28 +71,131 @@ Implication: cardinality >= 1
 ```
 
 ```
-<foo targetRef="someFlowElement" />
+<element targetRef="someFlowElement" />
 ```
 
 
-### sub types
+### Nested / referenced Elements
+
+Properties not preceeded by an `@` are nested or referenced entities.
+
+Whether elements are embedded or referenced depends on the `association = { ... }` property.
+
+
+#### Example
+
+*   Nested elements
+
+    ```
+    {
+      "name": "subtype",
+      "type": "SubType"
+    }
+    ```
+    
+    ```
+    <element>
+      <subtype>
+        <!-- ... -->
+      </subtype>
+    </element>
+    ```
+
+*   Referenced Elements
+
+    ```
+    {
+      "name": "referencedSubtype",
+      "type": "SubType",
+      "association": { ... }
+    }
+    ```
+    
+    ```
+    <element>
+      <referencedSubtype>SubType_ID</referencedSubtype>
+    </element>
+    ```
+
+
+### isMany
+
+Use `isMany = true || false` to denote whether a property is a collection or not.
+
+Definition: `isMany = `
+
+*   `true`: property exists `0..1` times
+*   `false`: property exists `0..n` times and is represented through a collection of elements
+
+#### Examples
+
+*   __isMany = true__
+    
+    ```
+    {
+      "name": "collectionProperty",
+      "type": "CollectionElement",
+      "isMany": true
+    }
+    ```
+    
+    ```
+    <element>
+      <collectionProperty><!-- ... --></collectionProperty>
+      <collectionProperty><!-- ... --></collectionProperty>
+    </element>
+    ```
+
+*   __isMany = false (default)__
+
+    ```
+    {
+      "name": "singleProperty",
+      "type": "ContainedElement"
+    }
+    ```
+    
+    ```
+    <element>
+      <singleProperty><!-- ... --></singleProperty>
+    </element>
+    ```
+
+
+### isRequired
+
+Use `isRequired = true || false` to specify whether a property must exist or not.
+
+_Exists_ means cardinality `>= 1`.
+
+
+#### Example
 
 ```
 {
-  "name": "subtype",
-  "type": "SubType"
+  "name": "mandatoryProperty",
+  "type": "SomeElement",
+  "isRequired": true
 }
 ```
 
 ```
-<foo>
-  <subtype>
-    <!-- .. -->
-  </subtype>
-</foo>
+<element>
+  <outgoing>outGoing1</outgoing>
+</element>
 ```
 
-### default values
+
+### Default Values
+
+Specify property default values via `default = aValue`.
+
+Possible default value types are `String`, `Number` or `Boolean`.
+
+A value will be serialized only if it does not match the default value.
+
+
+#### Example
 
 ```
 {
@@ -121,54 +205,47 @@ Implication: cardinality >= 1
 }
 ```
 
-Possible default values: `String || Boolean || Number`
+*   __value == default__
 
-If value == default:
+    ```
+    <element />
+    ```
 
-```
-<foo />
-```
+*   __value != default__
 
-else
+    ```
+    <element withDefault="BAR" />
+    ```
 
 
-```
-<foo withDefault="BAR" />
-```
+### Enumeration
 
-### enumeration
+An enumeration contains a set of possible values for a property.
+
+Use the `literalValues` field to specify all possible values.
+
+
+#### Example
 
 ```
 {
-  "name": "ProcessType",
+  "name": "Choice",
   "literalValues": [
     {
-      "name": "None"
+      "name": "Yes"
     },
     {
-      "name": "Public"
+      "name": "No"
     },
     {
-      "name": "Private"
+      "name": "Maybe"
     }
   ]
 }
 ```
 
-## General Structure
 
-
-```
-{
-  "name": "BPMN20",
-  "uri": "http://www.omg.org/spec/BPMN/20100524/MODEL-XMI",
-  "associations": [], 
-  "types": [],
-  "enumerations": []
-}
-```
-
-# Constraints
+## Constraints
 
 ```
 {

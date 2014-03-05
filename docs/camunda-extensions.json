@@ -1,0 +1,44 @@
+{
+  "name": "CamundaExtensions",
+  "prefix": "camunda",
+  "uri": "http://activiti.org/bpmn",
+  "types": [
+    {
+      "name": "camundaScriptTask",
+      "properties": [
+        {
+          "name": "async",
+          "isAttr": true,
+          "type": "Boolean",
+          "default": false
+        },
+        {
+          "name": "exclusive",
+          "isAttr": true,
+          "type": "Boolean",
+          "default": true
+        },
+        {
+          "name": "resultVariable",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "failedJobRetryTimeCycle",
+          "type": "tFailedJobRetryTimeCycle",
+          "isExtension": true,
+        }
+      ]
+    },
+    {
+      "name": "failedJobRetryTimeCycle",
+      "properties": [
+        {
+          "name": "value",
+          "type": "String",
+          "isBody": true
+        }
+      ]
+    }
+  ]
+}
